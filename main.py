@@ -450,7 +450,7 @@ async def analyze_vsl(video_url: str) -> str:
     if "drive.google.com" in video_url:
         video_url = drive_to_direct(video_url)
 
-    async with httpx.AsyncClient(follow_redirects=True, timeout=300) as client:
+    async with httpx.AsyncClient(follow_redirects=True, timeout=4000) as client:
         response = await client.get(video_url)
         response.raise_for_status()
         content_type = response.headers.get("content-type", "video/mp4")
@@ -474,7 +474,10 @@ async def analyze_vsl(video_url: str) -> str:
 
     model_name = get_best_gemini_model()
     model = genai.GenerativeModel(model_name)
-    result = model.generate_content([video_file, VSL_ANALYSIS_PROMPT])
+    result = model.generate_content(
+        [video_file, VSL_ANALYSIS_PROMPT],
+        request_options={"timeout": 600}
+    )
 
     os.unlink(tmp_path)
 
