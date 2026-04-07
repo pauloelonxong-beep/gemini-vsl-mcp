@@ -471,7 +471,7 @@ async def analyze_vsl(video_url: str) -> str:
     if video_file.state.name == "FAILED":
         raise Exception("Gemini File API falhou ao processar o vídeo")
 
-    model = genai.GenerativeModel("gemini-2.5-pro-preview-03-25")
+    model = genai.GenerativeModel("gemini-2.5-pro")
     result = model.generate_content([video_file, VSL_ANALYSIS_PROMPT])
 
     os.unlink(tmp_path)
