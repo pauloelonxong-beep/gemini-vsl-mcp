@@ -454,12 +454,13 @@ async def analyze_vsl(video_url: str) -> str:
         response = await client.get(video_url)
         response.raise_for_status()
         content_type = response.headers.get("content-type", "video/mp4")
+        video_bytes = response.content
 
     suffix = ".mov" if "mov" in content_type else ".mp4"
     mime = "video/quicktime" if suffix == ".mov" else "video/mp4"
 
     with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as f:
-        f.write(response.content)
+        f.write(video_bytes)
         tmp_path = f.name
 
     video_file = genai.upload_file(tmp_path, mime_type=mime)
@@ -471,7 +472,7 @@ async def analyze_vsl(video_url: str) -> str:
     if video_file.state.name == "FAILED":
         raise Exception("Gemini File API falhou ao processar o vídeo")
 
-    model = genai.GenerativeModel("gemini-2.5-pro")
+    model = genai.GenerativeModel("gemini-2.5-pro-preview-05-06")
     result = model.generate_content([video_file, VSL_ANALYSIS_PROMPT])
 
     os.unlink(tmp_path)
