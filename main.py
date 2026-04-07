@@ -472,12 +472,46 @@ async def analyze_vsl(video_url: str) -> str:
     if video_file.state.name == "FAILED":
         raise Exception("Gemini File API falhou ao processar o vídeo")
 
-    model = genai.GenerativeModel("gemini-2.5-pro-preview-05-06")
+    model_name = get_best_gemini_model()
+    model = genai.GenerativeModel(model_name)
     result = model.generate_content([video_file, VSL_ANALYSIS_PROMPT])
 
     os.unlink(tmp_path)
 
     return result.text
+
+
+def get_best_gemini_model() -> str:
+    """Detecta automaticamente o melhor modelo Gemini disponível."""
+    preferred = [
+        "gemini-2.5-pro",
+        "gemini-2.5-pro-latest",
+        "gemini-2.5-pro-preview",
+        "gemini-2.0-pro",
+        "gemini-1.5-pro-latest",
+        "gemini-1.5-pro",
+    ]
+    try:
+        available = [m.name for m in genai.list_models()]
+        for pref in preferred:
+            for avail in available:
+                if pref in avail and "generateContent" in [
+                    method.name if hasattr(method, 'name') else method
+                    for method in (
+                        getattr(
+                            next((m for m in genai.list_models() if m.name == avail), None),
+                            'supported_generation_methods', []
+                        )
+                    )
+                ]:
+                    return avail.replace("models/", "")
+        # fallback: retorna o primeiro modelo que suporta generateContent
+        for m in genai.list_models():
+            if "generateContent" in (m.supported_generation_methods or []):
+                return m.name.replace("models/", "")
+    except Exception:
+        pass
+    return "gemini-2.0-flash"
 
 
 def drive_to_direct(url: str) -> str:
